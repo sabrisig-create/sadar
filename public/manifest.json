@@ -1,0 +1,10 @@
+{
+  "name": "SADAR - Reflexive Device",
+  "short_name": "SADAR",
+  "description": "AI-assisted reflexive tool for psychotherapists",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f7",
+  "theme_color": "#1d1d1f",
+  "orientation": "portrait"
+}

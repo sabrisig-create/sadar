@@ -1,0 +1,216 @@
+import type { Reflection } from './supabase';
+import { format } from 'date-fns';
+
+export function generateReflectionPDF(reflection: Reflection): void {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    alert('Please allow popups to export PDF');
+    return;
+  }
+
+  const formattedDate = format(new Date(reflection.created_at), 'MMMM d, yyyy');
+  const formattedTime = format(new Date(reflection.created_at), 'h:mm a');
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SADAR Reflection - ${formattedDate}</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #1e293b;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .header h1 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+    .header .subtitle {
+      font-size: 14px;
+      color: #64748b;
+    }
+    .meta {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 32px;
+    }
+    .section {
+      margin-bottom: 28px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .section-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-scene { background: #f1f5f9; color: #475569; }
+    .badge-affect { background: #ccfbf1; color: #0d9488; }
+    .badge-hypothesis { background: #fef3c7; color: #d97706; }
+    .badge-ai { background: #0f172a; color: #fff; }
+    .section h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    .section-content {
+      padding: 16px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+    .section-content p {
+      white-space: pre-wrap;
+    }
+    .numbered-list {
+      list-style: none;
+      counter-reset: item;
+    }
+    .numbered-list li {
+      counter-increment: item;
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .numbered-list li:last-child {
+      margin-bottom: 0;
+    }
+    .numbered-list li::before {
+      content: counter(item);
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .obs-list li::before { background: #ccfbf1; color: #0d9488; }
+    .hyp-list li::before { background: #fef3c7; color: #d97706; }
+    .ai-section {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 2px solid #e2e8f0;
+    }
+    .ai-section .section-content {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+    }
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
+      text-align: center;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    @media print {
+      body { padding: 20px; }
+      .section-content { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>SADAR Reflection</h1>
+    <p class="subtitle">Sistema Autoesplorativo Dialogico Autentico Relazionale</p>
+  </div>
+
+  <div class="meta">
+    ${formattedDate} at ${formattedTime}
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-badge badge-scene">Scene</span>
+      <h2>Post-Session Scene</h2>
+    </div>
+    <div class="section-content">
+      <p>${escapeHtml(reflection.scene || 'No scene recorded')}</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-badge badge-affect">Affect</span>
+      <h2>Therapist Affect</h2>
+    </div>
+    <div class="section-content">
+      <p><strong>${escapeHtml(reflection.therapist_affect || 'Not recorded')}</strong></p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-badge badge-hypothesis">Hypothesis</span>
+      <h2>Initial Hypothesis</h2>
+    </div>
+    <div class="section-content">
+      <p>${escapeHtml(reflection.initial_hypothesis || 'No hypothesis recorded')}</p>
+    </div>
+  </div>
+
+  ${reflection.ai_response ? `
+  <div class="section ai-section">
+    <div class="section-header">
+      <span class="section-badge badge-ai">SADAR</span>
+      <h2>SADAR Response</h2>
+    </div>
+    <div class="section-content">
+      <p>${escapeHtml(reflection.ai_response)}</p>
+    </div>
+  </div>
+  ` : ''}
+
+  <div class="footer">
+    <p>Generated by SADAR - Reflexive Device for Psychotherapists</p>
+    <p>This document is for professional supervision use only. No patient data included.</p>
+  </div>
+
+  <script>
+    window.onload = function() {
+      window.print();
+    };
+  </script>
+</body>
+</html>
+  `;
+
+  printWindow.document.write(html);
+  printWindow.document.close();
+}
+
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
