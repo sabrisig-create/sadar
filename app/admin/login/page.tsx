@@ -20,7 +20,7 @@ export default function AdminLoginPage() {
     setError('');
     setLoading(true);
 
-    if (username === 'admin' && password === 'password') {
+    if (username === 'admin' && password === 'SecureAdmin@2024') {
       document.cookie = 'admin_auth=authenticated; path=/; max-age=86400';
       sessionStorage.setItem('admin_authenticated', 'true');
       router.push('/admin');
