@@ -198,12 +198,20 @@ UN POSSIBILE PASSO SUCCESSIVO
         de_id_confirmed: true,
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (insertError) {
       console.error("Error saving reflection:", insertError);
       return new Response(
-        JSON.stringify({ error: "Failed to save reflection", aiResponse }),
+        JSON.stringify({ error: "Failed to save reflection", details: insertError }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!reflection) {
+      console.error("No reflection returned after insert");
+      return new Response(
+        JSON.stringify({ error: "Reflection was not created" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
