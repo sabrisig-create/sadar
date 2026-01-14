@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Shield, FileText, Search, LogOut, Database } from 'lucide-react';
+import { Shield, FileText, Search, LogOut, Database, Users } from 'lucide-react';
 import { format } from 'date-fns';
 
 type Reflection = {
@@ -22,6 +22,14 @@ type Reflection = {
   user_email?: string;
 };
 
+type User = {
+  id: string;
+  email: string;
+  created_at: string;
+  last_sign_in_at: string | null;
+  reflection_count: number;
+};
+
 type SystemPrompt = {
   id: string;
   name: string;
@@ -34,6 +42,7 @@ export default function AdminPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [reflections, setReflections] = useState<Reflection[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [systemPrompts, setSystemPrompts] = useState<SystemPrompt[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedReflection, setSelectedReflection] = useState<Reflection | null>(null);
@@ -49,7 +58,7 @@ export default function AdminPage() {
 
   const loadAllData = async () => {
     setLoading(true);
-    await Promise.all([loadReflections(), loadSystemPrompts()]);
+    await Promise.all([loadReflections(), loadUsers(), loadSystemPrompts()]);
     setLoading(false);
   };
 
@@ -68,6 +77,20 @@ export default function AdminPage() {
       }
     } catch (error) {
       console.error('Error loading reflections:', error);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const response = await fetch('/api/admin/users');
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data || []);
+      } else {
+        console.error('Error loading users');
+      }
+    } catch (error) {
+      console.error('Error loading users:', error);
     }
   };
 
@@ -126,7 +149,7 @@ export default function AdminPage() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <Card className="border-0 shadow-sm">
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
@@ -136,6 +159,20 @@ export default function AdminPage() {
                 <div>
                   <p className="text-[13px] text-[#86868b]">Riflessioni Totali</p>
                   <p className="text-[24px] font-semibold text-[#1d1d1f]">{reflections.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-sm">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-[13px] text-[#86868b]">Utenti Registrati</p>
+                  <p className="text-[24px] font-semibold text-[#1d1d1f]">{users.length}</p>
                 </div>
               </div>
             </CardContent>
@@ -159,6 +196,7 @@ export default function AdminPage() {
         <Tabs defaultValue="reflections" className="space-y-6">
           <TabsList className="bg-white border-0 shadow-sm p-1">
             <TabsTrigger value="reflections">Riflessioni</TabsTrigger>
+            <TabsTrigger value="users">Utenti</TabsTrigger>
             <TabsTrigger value="prompts">System Prompts</TabsTrigger>
           </TabsList>
 
@@ -281,6 +319,54 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="users">
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle>Utenti Registrati</CardTitle>
+                <CardDescription>Elenco di tutti gli utenti del sistema</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {users.length === 0 ? (
+                    <div className="text-center py-8 text-[#86868b]">
+                      <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p>Nessun utente registrato</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-[#d2d2d7]">
+                            <th className="text-left py-3 px-4 text-[13px] font-medium text-[#86868b]">Email</th>
+                            <th className="text-left py-3 px-4 text-[13px] font-medium text-[#86868b]">Data Registrazione</th>
+                            <th className="text-left py-3 px-4 text-[13px] font-medium text-[#86868b]">Ultimo Accesso</th>
+                            <th className="text-left py-3 px-4 text-[13px] font-medium text-[#86868b]">Riflessioni</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {users.map((user) => (
+                            <tr key={user.id} className="border-b border-[#d2d2d7] hover:bg-[#f5f5f7] transition-colors">
+                              <td className="py-3 px-4 text-[15px] text-[#1d1d1f]">{user.email}</td>
+                              <td className="py-3 px-4 text-[14px] text-[#86868b]">
+                                {format(new Date(user.created_at), 'dd/MM/yyyy HH:mm')}
+                              </td>
+                              <td className="py-3 px-4 text-[14px] text-[#86868b]">
+                                {user.last_sign_in_at ? format(new Date(user.last_sign_in_at), 'dd/MM/yyyy HH:mm') : 'Mai'}
+                              </td>
+                              <td className="py-3 px-4">
+                                <Badge variant="outline" className="text-[12px]">{user.reflection_count}</Badge>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="prompts">
